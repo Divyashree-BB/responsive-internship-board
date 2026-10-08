@@ -1,0 +1,91 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Internship Board</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header>
+        <h1>Internship Board</h1>
+        <p>Find your next internship opportunity</p>
+    </header>
+
+
+    <!-- Main Content -->
+    <main>
+
+        <!-- Search and Filter Section -->
+        <section aria-labelledby="search-heading">
+
+            <h2 id="search-heading">Find Internships</h2>
+
+            <!-- Search -->
+            <div>
+                <label for="search">Search internships</label>
+
+                <input
+                    type="search"
+                    id="search"
+                    placeholder="Search by title, domain or skill"
+                >
+            </div>
+
+
+            <!-- Domain Filter -->
+            <div>
+                <label for="domain-filter">Filter by domain</label>
+
+                <select id="domain-filter">
+                    <option value="all">All Domains</option>
+                </select>
+            </div>
+
+        </section>
+
+
+        <!-- Internship List -->
+        <section aria-labelledby="internship-heading">
+
+            <h2 id="internship-heading">Available Internships</h2>
+
+            <!-- JavaScript will insert internship cards here -->
+            <div id="internship-list"></div>
+
+            <!-- Empty State -->
+            <div id="empty-state" hidden>
+                <h3>No internships found</h3>
+                <p>Try changing your search or filter.</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="error-state" hidden>
+                <h3>Unable to load internships</h3>
+                <p>Please try again later.</p>
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 Internship Board</p>
+    </footer>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
