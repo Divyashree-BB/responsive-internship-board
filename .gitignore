@@ -1,0 +1,17 @@
+
+# Node.js dependencies
+node_modules/
+backend/node_modules/
+
+# Local SQLite database
+backend/internships.db
+backend/internships.db-journal
+backend/internships.db-wal
+backend/internships.db-shm
+
+# Environment variables
+.env
+.env.local
+
+# Debug logs
+npm-debug.log*
