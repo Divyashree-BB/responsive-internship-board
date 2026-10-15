@@ -147,3 +147,109 @@ The following were tested successfully:
 
 ### Notes
 The included sample internship records and application URLs are for demonstration and testing purposes.
+
+
+---
+
+## Task 05 — Production-Ready Capstone
+
+### Overview
+
+Task 05 improves the Responsive Internship Board by strengthening backend security, adding health monitoring, recording API request logs, and documenting setup and testing procedures.
+
+### Backend Improvements
+
+- **Health check:** The `/health` endpoint checks whether the backend and SQLite database are working.
+- **Request logging:** Logs HTTP requests, response status codes, and request duration in the terminal.
+- **Security headers:** Helmet adds security-related HTTP headers.
+- **Rate limiting:** Limits repeated API requests to help reduce abuse.
+- **CORS configuration:** Controls which frontend origins are allowed to access the API.
+- **Input validation:** Validates incoming data before database operations.
+- **Parameterized SQL queries:** Helps protect database operations against SQL injection.
+- **Persistent storage:** SQLite stores internship and application data.
+
+### Technologies Used
+
+- HTML5, CSS3, and JavaScript
+- Node.js and Express.js
+- SQLite and better-sqlite3
+- Helmet, CORS, and express-rate-limit
+- Git and GitHub
+
+### Run the Project Locally
+
+**1. Start the backend**
+
+Open a terminal in the project folder and run:
+
+```bash
+cd backend
+npm install
+node db.js
+node server.js
+```
+
+Keep the backend terminal open. The API runs at `http://localhost:3000`, unless a different port is configured.
+
+**2. Open the frontend**
+
+Open the project folder in Visual Studio Code. Use the Live Server extension to open `index.html`.
+
+**3. Check backend health**
+
+Open this URL in your browser:
+
+`http://localhost:3000/health`
+
+A successful health check should report that the service is healthy. The exact response depends on the server implementation.
+
+**4. Check the internship API**
+
+Open:
+
+`http://localhost:3000/api/internships`
+
+The endpoint should return internship data in JSON format.
+
+### Automated Testing
+
+The backend includes test files for API endpoints and application submissions.
+
+Run the tests from the `backend` directory after starting the server, if the test scripts are designed to call the running API:
+
+```bash
+node test-api.js
+node test-applications.js
+```
+
+Check the terminal output for successful tests or errors.
+
+### Security and Quality Checks
+
+- Verify that valid API requests work correctly.
+- Test invalid IDs and invalid input values.
+- Confirm that nonexistent records return appropriate responses.
+- Verify that repeated requests are subject to rate limiting.
+- Confirm that the health endpoint detects database availability.
+- Check the website at desktop, tablet, and mobile screen sizes.
+- Check keyboard navigation, form labels, empty states, and error messages.
+- Review browser console errors and backend terminal logs.
+
+### Deployment Notes
+
+Before deploying, configure CORS to allow the actual frontend domain. Configure the server port and database storage for the hosting environment. Do not commit passwords, API keys, or other secrets.
+
+The GitHub Pages frontend demo does not automatically host the Node.js backend. The backend must be deployed separately for the live website to use it.
+
+### Project Deliverables
+
+- Responsive internship listing frontend.
+- REST API with SQLite persistence.
+- Backend health checks and request logging.
+- Security middleware and input validation.
+- API and application test scripts.
+- Documentation for local setup and testing.
+
+**Project:** Responsive Internship Board
+**Program:** EdVyro Full Stack Development
+**Task:** Task 05 — Production-Ready Capstone
