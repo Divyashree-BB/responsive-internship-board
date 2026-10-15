@@ -2,9 +2,36 @@
 const express = require("express");
 const Database = require("better-sqlite3");
 const path = require("path");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const cors = require("cors");
+
 
 const app = express();
+app.use(cors({
+    origin: [
+        "http://127.0.0.1:5501",
+        "http://localhost:5501"
+    ]
+}));
 const PORT = 3000;
+// Add secure HTTP headers
+app.use(helmet());
+
+// Limit repeated API requests
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 100,               // Maximum 100 requests per window
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: {
+        success: false,
+        error: "Too many requests. Please try again later."
+    }
+});
+
+// Apply the rate limit to API routes
+app.use("/api", apiLimiter);
 
 // Connect to the existing SQLite database
 const db = new Database(
@@ -274,6 +301,126 @@ app.delete("/api/internships/:id", (req, res) => {
     });
 });
 
+
+
+/* POST: Submit an internship application */
+app.post("/api/applications", (req, res) => {
+    const {
+        internship_id,
+        full_name,
+        email,
+        phone = "",
+        cover_letter
+    } = req.body || {};
+
+    // Validate internship ID
+    const id = getValidId(String(internship_id ?? ""));
+
+    if (id === null) {
+        return res.status(400).json({
+            success: false,
+            error: "A valid internship_id is required"
+        });
+    }
+
+    // Validate required fields
+    if (
+        typeof full_name !== "string" ||
+        full_name.trim().length < 2 ||
+        full_name.trim().length > 100
+    ) {
+        return res.status(400).json({
+            success: false,
+            error: "Name must be between 2 and 100 characters"
+        });
+    }
+
+    if (
+        typeof email !== "string" ||
+        email.length > 254 ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+    ) {
+        return res.status(400).json({
+            success: false,
+            error: "Please provide a valid email address"
+        });
+    }
+
+    if (
+        typeof phone !== "string" ||
+        phone.length > 20
+    ) {
+        return res.status(400).json({
+            success: false,
+            error: "Phone number must not exceed 20 characters"
+        });
+    }
+
+    if (
+        typeof cover_letter !== "string" ||
+        cover_letter.trim().length < 20 ||
+        cover_letter.trim().length > 2000
+    ) {
+        return res.status(400).json({
+            success: false,
+            error: "Cover letter must be between 20 and 2000 characters"
+        });
+    }
+
+    // Check that the internship exists
+    const internship = db.prepare(
+        "SELECT id FROM internships WHERE id = ?"
+    ).get(id);
+
+    if (!internship) {
+        return res.status(404).json({
+            success: false,
+            error: "Internship not found"
+        });
+    }
+
+    // Save the application using a parameterized query
+    try {
+        const result = db.prepare(`
+            INSERT INTO applications
+            (internship_id, full_name, email, phone, cover_letter)
+            VALUES (?, ?, ?, ?, ?)
+        `).run(
+            id,
+            full_name.trim(),
+            email.trim().toLowerCase(),
+            phone.trim(),
+            cover_letter.trim()
+        );
+
+        return res.status(201).json({
+            success: true,
+            message: "Application submitted successfully",
+            data: {
+                id: result.lastInsertRowid,
+                internship_id: id
+            }
+        });
+    } catch (error) {
+        if (
+            error.code === "SQLITE_CONSTRAINT_UNIQUE"
+        ) {
+            return res.status(409).json({
+                success: false,
+                error: "You have already applied for this internship"
+            });
+        }
+
+        console.error("Application error:", error.message);
+
+        return res.status(500).json({
+            success: false,
+            error: "Unable to submit application"
+        });
+    }
+});
+
+
 // Handle unknown routes
 app.use((req, res) => {
     res.status(404).json({
@@ -281,6 +428,8 @@ app.use((req, res) => {
         error: "Route not found"
     });
 });
+
+
 
 // Handle malformed JSON and other request errors
 app.use((err, req, res, next) => {

@@ -1,91 +1,161 @@
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Internship Board</title>
-
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-    <!-- Header -->
     <header>
         <h1>Internship Board</h1>
         <p>Find your next internship opportunity</p>
     </header>
 
-
-    <!-- Main Content -->
     <main>
-
-        <!-- Search and Filter Section -->
+        <!-- Search and Filter -->
         <section aria-labelledby="search-heading">
-
             <h2 id="search-heading">Find Internships</h2>
 
-            <!-- Search -->
             <div>
                 <label for="search">Search internships</label>
-
                 <input
                     type="search"
                     id="search"
-                    placeholder="Search by title, domain or skill"
+                    placeholder="Search by title, company or skill"
                 >
             </div>
 
-
-            <!-- Domain Filter -->
             <div>
                 <label for="domain-filter">Filter by domain</label>
-
                 <select id="domain-filter">
                     <option value="all">All Domains</option>
                 </select>
             </div>
-
         </section>
-
 
         <!-- Internship List -->
         <section aria-labelledby="internship-heading">
-
             <h2 id="internship-heading">Available Internships</h2>
 
-            <!-- JavaScript will insert internship cards here -->
+            <div id="loading-state" role="status" hidden>
+                <p>Loading internships...</p>
+            </div>
+
             <div id="internship-list"></div>
 
-            <!-- Empty State -->
             <div id="empty-state" hidden>
                 <h3>No internships found</h3>
                 <p>Try changing your search or filter.</p>
             </div>
 
-            <!-- Error State -->
-            <div id="error-state" hidden>
+            <div id="error-state" role="alert" hidden>
                 <h3>Unable to load internships</h3>
-                <p>Please try again later.</p>
+                <p id="error-message">
+                    Please check your connection and try again.
+                </p>
+                <button id="retry-button" class="view-button" type="button">
+                    Retry
+                </button>
             </div>
-
         </section>
 
+        <!-- Application Form -->
+        <section
+            id="application-section"
+            aria-labelledby="application-heading"
+            hidden
+        >
+            <h2 id="application-heading">Apply for Internship</h2>
+            <p id="selected-internship"></p>
+
+            <form id="application-form">
+                <input
+                    type="hidden"
+                    id="internship-id"
+                    name="internship_id"
+                >
+
+                <div>
+                    <label for="full-name">Full name *</label>
+                    <input
+                        type="text"
+                        id="full-name"
+                        name="full_name"
+                        minlength="2"
+                        maxlength="100"
+                        autocomplete="name"
+                        required
+                    >
+                </div>
+
+                <div>
+                    <label for="email">Email address *</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        maxlength="254"
+                        autocomplete="email"
+                        required
+                    >
+                </div>
+
+                <div>
+                    <label for="phone">Phone number</label>
+                    <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        maxlength="20"
+                        autocomplete="tel"
+                    >
+                </div>
+
+                <div>
+                    <label for="cover-letter">Why are you interested? *</label>
+                    <textarea
+                        id="cover-letter"
+                        name="cover_letter"
+                        minlength="20"
+                        maxlength="2000"
+                        rows="5"
+                        required
+                    ></textarea>
+                    <p>Write between 20 and 2000 characters.</p>
+                </div>
+
+                <button
+                    id="submit-application"
+                    class="view-button"
+                    type="submit"
+                >
+                    Submit Application
+                </button>
+
+                <button
+                    id="cancel-application"
+                    class="view-button"
+                    type="button"
+                >
+                    Cancel
+                </button>
+
+                <p
+                    id="application-message"
+                    role="status"
+                    aria-live="polite"
+                ></p>
+            </form>
+        </section>
     </main>
 
-
-    <!-- Footer -->
     <footer>
         <p>&copy; 2026 Internship Board</p>
     </footer>
 
-
     <script src="script.js"></script>
-
 </body>
-
 </html>
