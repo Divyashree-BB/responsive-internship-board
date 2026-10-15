@@ -6,22 +6,56 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 
-
 const app = express();
-app.use(cors({
-    origin: [
-        "http://127.0.0.1:5501",
-        "http://localhost:5501"
-    ]
-}));
-const PORT = 3000;
-// Add secure HTTP headers
+const PORT = process.env.PORT || 3000;
+
+// --------------------------------------------------
+// 1. Security headers
+// --------------------------------------------------
 app.use(helmet());
 
-// Limit repeated API requests
+// --------------------------------------------------
+// 2. CORS configuration
+// Allow the local frontend to call this backend.
+// --------------------------------------------------
+app.use(
+    cors({
+        origin: [
+            "http://127.0.0.1:5501",
+            "http://localhost:5501"
+        ]
+    })
+);
+
+// --------------------------------------------------
+// 3. Request logging
+// Log method, path, status code and response time.
+// Do not log request bodies or sensitive query values.
+// --------------------------------------------------
+app.use((req, res, next) => {
+    const startTime = Date.now();
+
+    res.on("finish", () => {
+        const duration = Date.now() - startTime;
+
+        console.log(
+            `[${new Date().toISOString()}] ` +
+            `${req.method} ${req.path} ` +
+            `Status: ${res.statusCode} ` +
+            `Duration: ${duration}ms`
+        );
+    });
+
+    next();
+});
+
+// --------------------------------------------------
+// 4. Rate limiting
+// Maximum 100 requests per 15 minutes per client.
+// --------------------------------------------------
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 100,               // Maximum 100 requests per window
+    windowMs: 15 * 60 * 1000,
+    limit: 100,
     standardHeaders: "draft-8",
     legacyHeaders: false,
     message: {
@@ -30,17 +64,25 @@ const apiLimiter = rateLimit({
     }
 });
 
-// Apply the rate limit to API routes
 app.use("/api", apiLimiter);
 
-// Connect to the existing SQLite database
+// --------------------------------------------------
+// 5. JSON request body parsing
+// Limit request bodies to 10 KB.
+// --------------------------------------------------
+app.use(express.json({ limit: "10kb" }));
+
+// --------------------------------------------------
+// 6. SQLite database connection
+// Use the existing database file.
+// --------------------------------------------------
 const db = new Database(
     path.join(__dirname, "internships.db")
 );
 
-// Middleware to read JSON request bodies
-app.use(express.json({ limit: "10kb" }));
-
+// --------------------------------------------------
+// 7. Validation helpers
+// --------------------------------------------------
 const allowedModes = ["Remote", "Hybrid", "On-site"];
 
 const requiredFields = [
@@ -52,7 +94,6 @@ const requiredFields = [
     "apply_url"
 ];
 
-// Validate internship details
 function validateInternship(body) {
     if (
         body === null ||
@@ -92,9 +133,8 @@ function validateInternship(body) {
     return null;
 }
 
-// Return a positive integer ID or null
 function getValidId(value) {
-    if (!/^[1-9]\d*$/.test(value)) {
+    if (!/^[1-9]\d*$/.test(String(value))) {
         return null;
     }
 
@@ -103,12 +143,13 @@ function getValidId(value) {
     return Number.isSafeInteger(id) ? id : null;
 }
 
-// Standardized internship fields
 function getInternshipValues(body) {
     return requiredFields.map(field => body[field].trim());
 }
 
-// API health check
+// --------------------------------------------------
+// 8. Root endpoint
+// --------------------------------------------------
 app.get("/", (req, res) => {
     res.status(200).json({
         success: true,
@@ -116,7 +157,38 @@ app.get("/", (req, res) => {
     });
 });
 
-// GET: List internships with pagination
+// --------------------------------------------------
+// 9. Health check
+// Checks both the API and SQLite database.
+// --------------------------------------------------
+app.get("/health", (req, res) => {
+    try {
+        db.prepare("SELECT 1 AS result").get();
+
+        return res.status(200).json({
+            success: true,
+            status: "healthy",
+            service: "Internship REST API",
+            database: "connected",
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error(
+            `[${new Date().toISOString()}] Health check failed`
+        );
+
+        return res.status(503).json({
+            success: false,
+            status: "unhealthy",
+            service: "Internship REST API",
+            database: "unavailable"
+        });
+    }
+});
+
+// --------------------------------------------------
+// 10. GET: List internships with pagination
+// --------------------------------------------------
 app.get("/api/internships", (req, res) => {
     const page = Number(req.query.page ?? 1);
     const limit = Number(req.query.limit ?? 5);
@@ -159,7 +231,9 @@ app.get("/api/internships", (req, res) => {
     });
 });
 
-// GET: Retrieve one internship
+// --------------------------------------------------
+// 11. GET: Retrieve one internship
+// --------------------------------------------------
 app.get("/api/internships/:id", (req, res) => {
     const id = getValidId(req.params.id);
 
@@ -187,7 +261,9 @@ app.get("/api/internships/:id", (req, res) => {
     });
 });
 
-// POST: Create an internship
+// --------------------------------------------------
+// 12. POST: Create an internship
+// --------------------------------------------------
 app.post("/api/internships", (req, res) => {
     const error = validateInternship(req.body);
 
@@ -217,7 +293,9 @@ app.post("/api/internships", (req, res) => {
     });
 });
 
-// PUT: Update an existing internship
+// --------------------------------------------------
+// 13. PUT: Update an existing internship
+// --------------------------------------------------
 app.put("/api/internships/:id", (req, res) => {
     const id = getValidId(req.params.id);
 
@@ -272,7 +350,9 @@ app.put("/api/internships/:id", (req, res) => {
     });
 });
 
-// DELETE: Remove an internship
+// --------------------------------------------------
+// 14. DELETE: Remove an internship
+// --------------------------------------------------
 app.delete("/api/internships/:id", (req, res) => {
     const id = getValidId(req.params.id);
 
@@ -301,9 +381,9 @@ app.delete("/api/internships/:id", (req, res) => {
     });
 });
 
-
-
-/* POST: Submit an internship application */
+// --------------------------------------------------
+// 15. POST: Submit an internship application
+// --------------------------------------------------
 app.post("/api/applications", (req, res) => {
     const {
         internship_id,
@@ -313,8 +393,7 @@ app.post("/api/applications", (req, res) => {
         cover_letter
     } = req.body || {};
 
-    // Validate internship ID
-    const id = getValidId(String(internship_id ?? ""));
+    const id = getValidId(internship_id ?? "");
 
     if (id === null) {
         return res.status(400).json({
@@ -323,7 +402,6 @@ app.post("/api/applications", (req, res) => {
         });
     }
 
-    // Validate required fields
     if (
         typeof full_name !== "string" ||
         full_name.trim().length < 2 ||
@@ -367,7 +445,6 @@ app.post("/api/applications", (req, res) => {
         });
     }
 
-    // Check that the internship exists
     const internship = db.prepare(
         "SELECT id FROM internships WHERE id = ?"
     ).get(id);
@@ -379,7 +456,6 @@ app.post("/api/applications", (req, res) => {
         });
     }
 
-    // Save the application using a parameterized query
     try {
         const result = db.prepare(`
             INSERT INTO applications
@@ -402,16 +478,16 @@ app.post("/api/applications", (req, res) => {
             }
         });
     } catch (error) {
-        if (
-            error.code === "SQLITE_CONSTRAINT_UNIQUE"
-        ) {
+        if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
             return res.status(409).json({
                 success: false,
                 error: "You have already applied for this internship"
             });
         }
 
-        console.error("Application error:", error.message);
+        console.error(
+            `[${new Date().toISOString()}] Application submission failed`
+        );
 
         return res.status(500).json({
             success: false,
@@ -420,18 +496,19 @@ app.post("/api/applications", (req, res) => {
     }
 });
 
-
-// Handle unknown routes
+// --------------------------------------------------
+// 16. Handle unknown routes
+// --------------------------------------------------
 app.use((req, res) => {
-    res.status(404).json({
+    return res.status(404).json({
         success: false,
         error: "Route not found"
     });
 });
 
-
-
-// Handle malformed JSON and other request errors
+// --------------------------------------------------
+// 17. Centralized error handler
+// --------------------------------------------------
 app.use((err, req, res, next) => {
     if (res.headersSent) {
         return next(err);
@@ -451,7 +528,10 @@ app.use((err, req, res, next) => {
         });
     }
 
-    console.error("API error:", err.message);
+    console.error(
+        `[${new Date().toISOString()}] ` +
+        `Unhandled error on ${req.method} ${req.path}`
+    );
 
     return res.status(500).json({
         success: false,
@@ -459,7 +539,34 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start the server
-app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+// --------------------------------------------------
+// 18. Start the server
+// --------------------------------------------------
+const server = app.listen(PORT, () => {
+    console.log(
+        `[${new Date().toISOString()}] ` +
+        `Server running at http://localhost:${PORT}`
+    );
 });
+
+// Log server startup errors, such as a port conflict.
+server.on("error", (error) => {
+    console.error(
+        `[${new Date().toISOString()}] Server startup failed: ${error.code}`
+    );
+    process.exitCode = 1;
+});
+
+// Graceful shutdown
+function shutdown() {
+    console.log("Shutting down server...");
+
+    server.close(() => {
+        db.close();
+        console.log("Server and database connection closed.");
+        process.exit(0);
+    });
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
